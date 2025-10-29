@@ -700,3 +700,5 @@ export const searchMeditations = (query: string): MeditationItem[] => {
   );
 };
 
+
+

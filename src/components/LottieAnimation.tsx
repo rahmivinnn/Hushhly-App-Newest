@@ -44,3 +44,5 @@ const LottieAnimation: React.FC<LottieAnimationProps> = ({
 
 export default LottieAnimation;
 
+
+

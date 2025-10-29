@@ -1,0 +1,16 @@
+app_identifier ENV["IOS_APP_IDENTIFIER"]
+apple_id ENV["APPLE_ID_EMAIL"]
+itc_team_id ENV["APP_STORE_TEAM_ID"]
+team_id ENV["APPLE_DEV_TEAM_ID"]
+
+# App Store Connect API key configuration (for authentication in CI)
+api_key(
+  key_id: ENV["APP_STORE_CONNECT_KEY_ID"],
+  issuer_id: ENV["APP_STORE_CONNECT_ISSUER_ID"],
+  key_content: ENV["APP_STORE_CONNECT_P8"],
+  is_key_content_base64: true
+)
+
+
+
+

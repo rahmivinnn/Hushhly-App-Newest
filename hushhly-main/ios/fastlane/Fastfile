@@ -1,0 +1,103 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Build and upload to TestFlight"
+  lane :beta do
+    ensure_xcode_version
+
+    # Sync Capacitor iOS content (assumes web built before)
+    # CI does this in workflow; keep lane focused on iOS build+upload
+
+    # Auto-increment build number from CI (falls back to timestamp)
+    build_no = ENV["BUILD_NUMBER"]
+    if build_no.nil? || build_no.strip.empty?
+      build_no = Time.now.strftime('%y%m%d%H%M')
+    end
+    increment_build_number(
+      build_number: build_no,
+      xcodeproj: "App/App.xcodeproj"
+    )
+
+    # Install pods if needed
+    cocoapods(
+      clean_install: true,
+      repo_update: true,
+      podfile: "App/Podfile"
+    )
+
+    # Build archive
+    build_app(
+      scheme: "App",
+      workspace: "App/App.xcworkspace",
+      export_method: "app-store",
+      include_bitcode: false,
+      include_symbols: true,
+      output_directory: "./build",
+      output_name: "App.ipa",
+      xcargs: "ONLY_ACTIVE_ARCH=NO",
+      silent: false
+    )
+
+    # Upload to TestFlight
+    # Conditional auto-submit: if contact info missing, skip beta review but still distribute externally
+    has_review_info = [
+      ENV["BETA_REVIEW_CONTACT_EMAIL"],
+      ENV["BETA_REVIEW_CONTACT_FIRST_NAME"],
+      ENV["BETA_REVIEW_CONTACT_LAST_NAME"],
+      ENV["BETA_REVIEW_CONTACT_PHONE"]
+    ].all? { |v| v && !v.strip.empty? }
+
+    pilot(
+      ipa: "./build/App.ipa",
+      skip_waiting_for_build_processing: true,
+      distribute_external: true,
+      notify_external_testers: true,
+      submit_for_beta_review: has_review_info,
+      groups: (ENV["TESTFLIGHT_GROUPS"] || "External Testers"),
+      changelog: ENV["TESTFLIGHT_CHANGELOG"],
+      uses_non_exempt_encryption: (ENV["USES_NON_EXEMPT_ENCRYPTION"] == "true"),
+      beta_app_review_info: (
+        has_review_info ? {
+          contact_email: ENV["BETA_REVIEW_CONTACT_EMAIL"],
+          contact_first_name: ENV["BETA_REVIEW_CONTACT_FIRST_NAME"],
+          contact_last_name: ENV["BETA_REVIEW_CONTACT_LAST_NAME"],
+          contact_phone: ENV["BETA_REVIEW_CONTACT_PHONE"],
+          demo_account_name: ENV["BETA_REVIEW_DEMO_USER"],
+          demo_account_password: ENV["BETA_REVIEW_DEMO_PASSWORD"],
+          notes: ENV["BETA_REVIEW_NOTES"]
+        } : nil
+      )
+    )
+  end
+
+  desc "Build and export IPA only"
+  lane :build_ipa do
+    ensure_xcode_version
+    build_no = ENV["BUILD_NUMBER"]
+    if build_no.nil? || build_no.strip.empty?
+      build_no = Time.now.strftime('%y%m%d%H%M')
+    end
+    increment_build_number(
+      build_number: build_no,
+      xcodeproj: "App/App.xcodeproj"
+    )
+    cocoapods(
+      clean_install: true,
+      repo_update: true,
+      podfile: "App/Podfile"
+    )
+    build_app(
+      scheme: "App",
+      workspace: "App/App.xcworkspace",
+      export_method: "app-store",
+      include_bitcode: false,
+      include_symbols: true,
+      output_directory: "./build",
+      output_name: "App.ipa",
+      xcargs: "ONLY_ACTIVE_ARCH=NO",
+      silent: false
+    )
+  end
+end
+
+

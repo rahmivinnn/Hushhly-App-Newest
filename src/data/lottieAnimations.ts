@@ -634,3 +634,5 @@ export const getLottieAnimation = (name: string) => {
   return lottieAnimations[name as keyof typeof lottieAnimations] || lottieAnimations['breathing-circle'];
 };
 
+
+
